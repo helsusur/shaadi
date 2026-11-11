@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full Screen Video Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom Scrollbars & Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000000;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Glassmorphism Navigation Bar */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    /* Auto-hide UI controls when inactive */
+    .controls-overlay {
+      transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .user-inactive .controls-overlay {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+      pointer-events: none;
+    }
+
+    /* Glow active video button */
+    .btn-active {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+      color: #ffffff !important;
+      border-color: rgba(96, 165, 250, 0.6) !important;
+      box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen flex items-center justify-center bg-black select-none">
+
+  <!-- Main Video Container -->
+  <div id="videoContainer" class="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+    
+    <!-- Google Drive Video Embed Frame -->
+    <iframe 
+      id="videoPlayer" 
+      class="w-full h-full border-0 absolute inset-0"
+      src="https://drive.google.com/file/d/1hbMS9FfnBEEWa7X5-FXTTzlmgCWfndb7/preview" 
+      allow="autoplay; fullscreen"
+      allowfullscreen
+      title="Google Drive Video Player">
+    </iframe>
+
+    <!-- Floating Glassmorphism Controls Overlay -->
+    <div id="controlsOverlay" class="controls-overlay fixed bottom-6 left-1/2 -translate-x-1/2 z-50 glass-panel rounded-2xl px-4 py-3 flex items-center gap-3 md:gap-4 max-w-[95vw]">
+      
+      <!-- Part Selection Buttons -->
+      <div class="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+        <button 
+          id="btn-part1"
+          onclick="switchPart('https://drive.google.com/file/d/1hbMS9FfnBEEWa7X5-FXTTzlmgCWfndb7/preview', 'btn-part1')"
+          class="btn-active flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 transition-all duration-200 whitespace-nowrap active:scale-95">
+          <i class="fa-solid fa-play text-xs"></i>
+          <span>Part 1</span>
+        </button>
+
+        <button 
+          id="btn-part2"
+          onclick="switchPart('https://drive.google.com/file/d/1ZCp5zupr6Sb6uEPl-9yTdfw5X3czDlub/preview', 'btn-part2')"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 transition-all duration-200 whitespace-nowrap active:scale-95">
+          <i class="fa-solid fa-play text-xs"></i>
+          <span>Part 2</span>
+        </button>
+
+        <button 
+          id="btn-part3"
+          onclick="switchPart('https://drive.google.com/file/d/1IzTtRY-UxyseP7YW3y_QYc5H8Na122kS/preview', 'btn-part3')"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 transition-all duration-200 whitespace-nowrap active:scale-95">
+          <i class="fa-solid fa-play text-xs"></i>
+          <span>Part 3</span>
+        </button>
+
+        <button 
+          id="btn-part4"
+          onclick="switchPart('https://drive.google.com/file/d/1yl5MqJbj2pA-ZJCaeJ3D2k1hYARgnj_n/preview', 'btn-part4')"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 transition-all duration-200 whitespace-nowrap active:scale-95">
+          <i class="fa-solid fa-play text-xs"></i>
+          <span>Part 4</span>
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="h-6 w-[1px] bg-white/20 hidden sm:block"></div>
+
+      <!-- Browser Fullscreen Toggle Button -->
+      <button 
+        onclick="toggleFullScreen()" 
+        title="Toggle True Fullscreen"
+        class="flex items-center justify-center p-2.5 rounded-xl text-white bg-blue-600 hover:bg-blue-500 border border-blue-400/30 transition-all duration-200 active:scale-95 shrink-0">
+        <i id="fullscreenIcon" class="fa-solid fa-expand text-base"></i>
+      </button>
+
+    </div>
+
+  </div>
+
+  <script>
+    const player = document.getElementById('videoPlayer');
+    const container = document.getElementById('videoContainer');
+    const fullscreenIcon = document.getElementById('fullscreenIcon');
+    let activityTimeout = null;
+
+    // Switch active video source and update visual active state
+    function switchPart(url, buttonId) {
+      // Update iframe video source
+      player.src = url;
+
+      // Update button styling
+      const buttons = document.querySelectorAll('#controlsOverlay button[id^="btn-part"]');
+      buttons.forEach(btn => {
+        btn.classList.remove('btn-active');
+        btn.classList.add('bg-slate-800/80', 'text-gray-300');
+      });
+
+      const activeButton = document.getElementById(buttonId);
+      if (activeButton) {
+        activeButton.classList.add('btn-active');
+        activeButton.classList.remove('bg-slate-800/80', 'text-gray-300');
+      }
+    }
+
+    // Toggle browser level full screen mode
+    function toggleFullScreen() {
+      if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        if (container.requestFullscreen) {
+          container.requestFullscreen();
+        } else if (container.msRequestFullscreen) {
+          container.msRequestFullscreen();
+        } else if (container.mozRequestFullScreen) {
+          container.mozRequestFullScreen();
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+
+    // Update Fullscreen Button Icon on state change
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    function handleFullscreenChange() {
+      const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      if (isFullscreen) {
+        fullscreenIcon.classList.remove('fa-expand');
+        fullscreenIcon.classList.add('fa-compress');
+      } else {
+        fullscreenIcon.classList.remove('fa-compress');
+        fullscreenIcon.classList.add('fa-expand');
+      }
+    }
+
+    // Auto-hide control bar when idle
+    function handleUserActivity() {
+      document.body.classList.remove('user-inactive');
+      clearTimeout(activityTimeout);
+      activityTimeout = setTimeout(() => {
+        document.body.classList.add('user-inactive');
+      }, 3500);
+    }
+
+    // Event listeners for user activity
+    window.addEventListener('mousemove', handleUserActivity);
+    window.addEventListener('touchstart', handleUserActivity);
+    window.addEventListener('keydown', handleUserActivity);
+
+    // Initial timeout trigger
+    handleUserActivity();
+  </script>
+</body>
+</html>
